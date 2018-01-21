@@ -158,7 +158,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="addweight.cpp" />
     <ClCompile Include="C:\Users\chameleon001\Desktop\새 폴더 (2)\reduce.cpp" />
+    <ClCompile Include="colorreduce.cpp" />
     <ClCompile Include="iterator.cpp" />
     <ClCompile Include="reducetimer.cpp" />
     <ClCompile Include="sharpen.cpp" />

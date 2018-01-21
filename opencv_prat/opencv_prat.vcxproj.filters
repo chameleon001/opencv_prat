@@ -27,5 +27,11 @@
     <ClCompile Include="sharpen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="addweight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="colorreduce.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
