@@ -11,6 +11,7 @@ using namespace std;
 
 
 Mat objectHistogram;
+
 Mat globalHistogram;
 
 void getObjectHistogram(Mat &frame, Rect object_region)
@@ -36,6 +37,7 @@ void getObjectHistogram(Mat &frame, Rect object_region)
         }
     }
     normalize(objectHistogram, objectHistogram, 0, 255, NORM_MINMAX);
+
 }
 void backProjection(const Mat &frame, const Mat &histogram, Mat &bp) {
     const int channels[] = { 0, 1 };
@@ -49,7 +51,13 @@ void backProjection(const Mat &frame, const Mat &histogram, Mat &bp) {
 int main()
 {
     VideoCapture cap("dang1.avi");
-  
+    Rect rectroi;
+    Mat sub;
+
+    int left;
+    int top;
+    int width;
+    int height;
 
     //웹캡에서 캡처되는 이미지 크기를 320x240으로 지정  
     cap.set(CAP_PROP_FRAME_WIDTH, 320);
@@ -64,11 +72,33 @@ int main()
 
     namedWindow("찾을 색범위 설정", CV_WINDOW_AUTOSIZE);
 
-    //트랙바에서 사용되는 변수 초기화 
-    int LowH = 170;
-    int HighH = 179;
+    ////트랙바에서 사용되는 변수 초기화 
+    //int LowH = 170;
+    //int HighH = 179;
 
-    int LowS = 50;
+    //int LowS = 50;
+    //int HighS = 255;
+
+    //int LowV = 0;
+    //int HighV = 255;
+
+
+    ////트랙바 생성 
+    //cvCreateTrackbar("LowH", "찾을 색범위 설정", &LowH, 179); //Hue (0 - 179)
+    //cvCreateTrackbar("HighH", "찾을 색범위 설정", &HighH, 179);
+
+    //cvCreateTrackbar("LowS", "찾을 색범위 설정", &LowS, 255); //Saturation (0 - 255)
+    //cvCreateTrackbar("HighS", "찾을 색범위 설정", &HighS, 255);
+
+    //cvCreateTrackbar("LowV", "찾을 색범위 설정", &LowV, 255); //Value (0 - 255)
+    //cvCreateTrackbar("HighV", "찾을 색범위 설정", &HighV, 255);
+
+
+    //트랙바에서 사용되는 변수 초기화 
+    int LowH = 101;
+    int HighH = 166;
+
+    int LowS = 150;
     int HighS = 255;
 
     int LowV = 0;
@@ -76,8 +106,8 @@ int main()
 
 
     //트랙바 생성 
-    cvCreateTrackbar("LowH", "찾을 색범위 설정", &LowH, 179); //Hue (0 - 179)
-    cvCreateTrackbar("HighH", "찾을 색범위 설정", &HighH, 179);
+    cvCreateTrackbar("LowH", "찾을 색범위 설정", &LowH, 255); //Hue (0 - 179)
+    cvCreateTrackbar("HighH", "찾을 색범위 설정", &HighH, 255);
 
     cvCreateTrackbar("LowS", "찾을 색범위 설정", &LowS, 255); //Saturation (0 - 255)
     cvCreateTrackbar("HighS", "찾을 색범위 설정", &HighS, 255);
@@ -92,8 +122,8 @@ int main()
 
 
 
-    Rect prev_rect;
-    Mat bp;
+    Rect prev_rect, prev_rect1,prev_rect2, prev_rect3;
+    Mat bp,bp1,bp2,bp3;
 
 
     while (true)
@@ -101,10 +131,11 @@ int main()
         i++;
 
         //웹캠에서 캡처되는 속도 출력  
-        int fps = cap.get(CAP_PROP_FPS);
-        cout << fps << " " << i << endl;
+      //  int fps = cap.get(CAP_PROP_FPS);
+      //  cout << fps << " " << i << endl;
 
-        Mat img_input, img_hsv, img_binary;
+        Mat img_input, img_hsv, img_binary,img_binary1,img_binary2, img_binary3;
+        Mat img_red, img_oran, img_white;
 
 
         //카메라로부터 이미지를 가져옴 
@@ -119,11 +150,12 @@ int main()
 
         //HSV로 변환
         cvtColor(img_input, img_hsv, COLOR_BGR2HSV);
-
+        //cvtColor(이미지, mat_gray(바꿀거),어떻게 바꿀거):첫번째 인수로 지정된 이미지를  세번째 인수형식으로 바꾼 이미지를 두번째 인수로 돌려 준다.
 
 
         //지정한 HSV 범위를 이용하여 영상을 이진화
-        inRange(img_hsv, Scalar(LowH, LowS, LowV), Scalar(HighH, HighS, HighV), img_binary);
+        //inRange(img_hsv, Scalar(LowH, LowS, LowV), Scalar(HighH, HighS, HighV), img_binary);
+        inRange(img_hsv, Scalar(101, 150, 0), Scalar(166, 255, 255), img_binary);
 
 
         //morphological opening 작은 점들을 제거 
@@ -137,8 +169,8 @@ int main()
 
 
 
-        if (i < 100)
-        {
+       // if (i < 100)
+       // {
 
             //라벨링 
             Mat img_labels, stats, centroids;
@@ -157,36 +189,172 @@ int main()
                 }
             }
 
+             left = stats.at<int>(idx, CC_STAT_LEFT);
+             top = stats.at<int>(idx, CC_STAT_TOP);
+             width = stats.at<int>(idx, CC_STAT_WIDTH);
+             height = stats.at<int>(idx, CC_STAT_HEIGHT);
 
-            int left = stats.at<int>(idx, CC_STAT_LEFT);
-            int top = stats.at<int>(idx, CC_STAT_TOP);
-            int width = stats.at<int>(idx, CC_STAT_WIDTH);
-            int height = stats.at<int>(idx, CC_STAT_HEIGHT);
 
-
-            rectangle(img_input, Point(left, top), Point(left + width, top + height),
-                Scalar(0, 0, 255), 1);
+            //rectangle(img_input, Point(left, top), Point(left + width, top + height),Scalar(0, 0, 255), 1);
 
             Rect object_region(left, top, width, height);
-
+            Rect rectroi1(left, top, width, height);
+            sub = img_input(rectroi1);
             getObjectHistogram(img_hsv, object_region);
             prev_rect = object_region;
-        }
-        else {
+        
+            ////////
+            ////////
+            ////////
+         cvtColor(sub, img_red, COLOR_BGR2HSV);
+         cvtColor(sub, img_oran, COLOR_BGR2HSV);
+         cvtColor(sub, img_white, COLOR_BGR2HSV);
+            //cvtColor(이미지, mat_gray(바꿀거),어떻게 바꿀거):첫번째 인수로 지정된 이미지를  세번째 인수형식으로 바꾼 이미지를 두번째 인수로 돌려 준다.
+
+
+            //지정한 HSV 범위를 이용하여 영상을 이진화
+            
+         //   inRange(sub, Scalar(LowH, LowS, LowV), Scalar(HighH, HighS, HighV), img_binary1);
+            
+            inRange(img_red, Scalar(170, 50, 0), Scalar(179, 255, 255), img_binary1);
+            inRange(img_oran, Scalar(4, 114, 148), Scalar(80, 234, 255), img_binary2);
+            inRange(img_white, Scalar(30, 0, 218), Scalar(100, 101, 255), img_binary3);
+            //morphological opening 작은 점들을 제거 
+            erode(img_binary1, img_binary1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            dilate(img_binary1, img_binary1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+            erode(img_binary2, img_binary2, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            dilate(img_binary2, img_binary2, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+            erode(img_binary3, img_binary3, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            dilate(img_binary3, img_binary3, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+            //morphological closing 영역의 구멍 메우기 
+            dilate(img_binary1, img_binary1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            erode(img_binary1, img_binary1, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+            dilate(img_binary2, img_binary2, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            erode(img_binary2, img_binary2, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            dilate(img_binary3, img_binary3, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+            erode(img_binary3, img_binary3, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+
+            if (i < 100)
+            {
+
+                //라벨링 
+                Mat img_labels1, stats1, centroids1;
+                int numOfLables1 = connectedComponentsWithStats(img_binary1, img_labels1,
+                    stats1, centroids1, 8, CV_32S);
+                Mat img_labels2, stats2, centroids2;
+                int numOfLables2 = connectedComponentsWithStats(img_binary2, img_labels2,
+                    stats2, centroids2, 8, CV_32S);
+                Mat img_labels3, stats3, centroids3;
+                int numOfLables3 = connectedComponentsWithStats(img_binary3, img_labels3,
+                    stats3, centroids3, 8, CV_32S);
+
+
+                //영역박스 그리기
+                int max = -1, idx = 0;
+                for (int j = 1; j < numOfLables1; j++) {
+                    int area = stats1.at<int>(j, CC_STAT_AREA);
+                    if (max < area)
+                    {
+                        max = area;
+                        idx = j;
+                    }
+                }
+
+                int lefta = stats1.at<int>(idx, CC_STAT_LEFT);
+                int topa = stats1.at<int>(idx, CC_STAT_TOP);
+                int widtha = stats1.at<int>(idx, CC_STAT_WIDTH);
+                int heighta = stats1.at<int>(idx, CC_STAT_HEIGHT);
+
+                int max2 = -1, idx2 = 0;
+                for (int j = 1; j < numOfLables2; j++) {
+                    int area = stats2.at<int>(j, CC_STAT_AREA);
+                    if (max2 < area)
+                    {
+                        max2 = area;
+                        idx2 = j;
+                    }
+                }
+
+
+                int leftb = stats2.at<int>(idx2, CC_STAT_LEFT);
+                int topb = stats2.at<int>(idx2, CC_STAT_TOP);
+                int widthb = stats2.at<int>(idx2, CC_STAT_WIDTH);
+                int heightb = stats2.at<int>(idx2, CC_STAT_HEIGHT);
+
+
+                int max3 = -1, idx3 = 0;
+                for (int j = 1; j < numOfLables3; j++) {
+                    int area = stats3.at<int>(j, CC_STAT_AREA);
+                    if (max3 < area)
+                    {
+                        max3 = area;
+                        idx3 = j;
+                    }
+                }
+
+
+                int leftc = stats3.at<int>(idx3, CC_STAT_LEFT);
+                int topc = stats3.at<int>(idx3, CC_STAT_TOP);
+                int widthc = stats3.at<int>(idx3, CC_STAT_WIDTH);
+                int heightc = stats3.at<int>(idx3, CC_STAT_HEIGHT);
+
+                //rectangle(img_input, Point(left, top), Point(left + width, top + height),Scalar(0, 0, 255), 1);
+
+                Rect object_region1(lefta, topa, widtha, heighta);
+                getObjectHistogram(img_red, object_region1);
+                prev_rect1 = object_region1;
+
+                Rect object_region2(leftb, topb, widthb, heightb);
+                getObjectHistogram(img_oran, object_region2);
+                prev_rect2 = object_region2;
+
+                Rect object_region3(leftc, topc, widthc, heightc);
+                getObjectHistogram(img_white, object_region3);
+                prev_rect3 = object_region3;
+
+            }
+            else {
+
+                backProjection(img_red, objectHistogram, bp1);
+                bitwise_and(bp1, img_binary1, bp1);
+                RotatedRect rect = CamShift(bp1, prev_rect1, cvTermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 1));
+                ellipse(sub, rect, CV_RGB(255, 0, 0), 3, CV_AA);
+
+                backProjection(img_oran, objectHistogram, bp2);
+                bitwise_and(bp2, img_binary2, bp2);
+                RotatedRect rect1 = CamShift(bp2, prev_rect2, cvTermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 1));
+                ellipse(sub, rect1, CV_RGB(255, 0, 0), 3, CV_AA);
+
+                backProjection(img_white, objectHistogram, bp3);
+                bitwise_and(bp3, img_binary3, bp3);
+                RotatedRect rect2 = CamShift(bp3, prev_rect3, cvTermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 1));
+                ellipse(sub, rect2, CV_RGB(255, 0, 0), 3, CV_AA);
+
+            }
+            ////////
+            /////////
+            /////
+
+       // }
+
+      /*  else {
 
             backProjection(img_hsv, objectHistogram, bp);
             bitwise_and(bp, img_binary, bp);
             RotatedRect rect = CamShift(bp, prev_rect, cvTermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 20, 1));
-
             ellipse(img_input, rect, CV_RGB(255, 0, 0), 3, CV_AA);
 
-
-        }
-
-        imshow("이진화 영상", img_binary);
+        }*/
+       
+        imshow("이진화 영상", img_binary2);
         imshow("원본 영상", img_input);
-
-
+        imshow("123 영상", sub);
+       // imshow("레드 찾기", sub);
         //ESC키 누르면 프로그램 종료
         if (waitKey(1) == 27)
             break;
